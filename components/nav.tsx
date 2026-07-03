@@ -1,15 +1,17 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { formatCash } from "@/lib/utils"
 import { logout } from "@/app/actions/auth"
+import { CurrencyAmount } from "@/components/currency-amount"
+import { CurrencyPicker } from "@/components/currency-picker"
+import { SearchBar } from "@/components/search-bar"
+import { CategoryPills } from "@/components/category-pills"
 
 export async function Nav() {
   const supabase = await createClient()
@@ -27,62 +29,65 @@ export async function Nav() {
     profile = data
   }
 
+  const { data: marketRows } = await supabase.from("markets").select("category").eq("status", "open")
+  const categories = Array.from(
+    new Set((marketRows ?? []).map((m) => m.category).filter((c): c is string => !!c))
+  ).sort()
+
   return (
-    <header className="border-b">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            Kalo
-          </Link>
-          {user && (
-            <nav className="flex items-center gap-4 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-foreground">
-                Markets
-              </Link>
-              <Link href="/portfolio" className="hover:text-foreground">
-                Portfolio
-              </Link>
-              {profile?.is_admin && (
-                <Link href="/admin" className="hover:text-foreground">
-                  Admin
-                </Link>
-              )}
-            </nav>
+    <header className="sticky top-0 z-10 border-b border-border bg-background">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
+        <Link href="/" className="shrink-0 font-display text-xl font-extrabold tracking-tight">
+          KAL<span className="text-kola">O</span>
+        </Link>
+
+        <SearchBar />
+
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {user && profile ? (
+            <>
+              <CurrencyAmount usd={profile.balance} className="text-sm text-kola font-semibold" />
+              <CurrencyPicker />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {profile.display_name}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/portfolio">Portfolio</Link>
+                  </DropdownMenuItem>
+                  {profile.is_admin && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin">Admin</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <form action={logout} className="w-full">
+                      <button type="submit" className="w-full text-left">
+                        Log out
+                      </button>
+                    </form>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <CurrencyPicker />
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/login">Log in</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href="/signup">Sign up</Link>
+              </Button>
+            </>
           )}
         </div>
-
-        {user && profile ? (
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="font-mono">
-              {formatCash(profile.balance)}
-            </Badge>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {profile.display_name}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <form action={logout} className="w-full">
-                    <button type="submit" className="w-full text-left">
-                      Log out
-                    </button>
-                  </form>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="/signup">Sign up</Link>
-            </Button>
-          </div>
-        )}
+      </div>
+      <div className="mx-auto max-w-6xl px-4 pb-2">
+        <CategoryPills categories={categories} />
       </div>
     </header>
   )

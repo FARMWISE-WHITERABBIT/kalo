@@ -6,7 +6,9 @@ export default function SignupPage() {
     <div className="flex min-h-[80vh] items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Join Kalo</CardTitle>
+          <CardTitle className="font-display text-lg">
+            Join KAL<span className="text-kola">O</span>
+          </CardTitle>
           <CardDescription>Play-money prediction markets. No real money involved.</CardDescription>
         </CardHeader>
         <CardContent>

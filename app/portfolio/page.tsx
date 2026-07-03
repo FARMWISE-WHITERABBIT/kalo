@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatCash, formatPercent, formatShares } from "@/lib/utils"
+import { formatPercent, formatShares } from "@/lib/utils"
+import { CurrencyAmount } from "@/components/currency-amount"
 import { CancelOrderButton } from "./cancel-order-button"
 
 export default async function PortfolioPage() {
@@ -37,18 +38,18 @@ export default async function PortfolioPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">Portfolio</h1>
+      <h1 className="mb-6 font-display text-2xl font-semibold tracking-tight">Portfolio</h1>
 
       <Card className="mb-6">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-muted-foreground">Balance</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Balance</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-3xl font-semibold">{formatCash(profile?.balance ?? 0)}</p>
+          <CurrencyAmount usd={profile?.balance ?? 0} className="text-3xl font-semibold text-kola" />
         </CardContent>
       </Card>
 
-      <h2 className="mb-2 text-lg font-semibold tracking-tight">Positions</h2>
+      <h2 className="mb-2 font-display text-lg font-semibold tracking-tight">Positions</h2>
       <Card className="mb-6">
         <CardContent className="p-0">
           {(positions ?? []).length === 0 ? (
@@ -70,13 +71,20 @@ export default async function PortfolioPage() {
                         {p.markets?.question ?? "Market"}
                       </Link>
                       {p.markets?.status === "resolved" && (
-                        <Badge variant="outline" className="ml-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            p.markets.resolved_outcome === "YES"
+                              ? "ml-2 border-yes text-yes"
+                              : "ml-2 border-no text-no"
+                          }
+                        >
                           Resolved {p.markets.resolved_outcome}
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{p.outcome}</TableCell>
-                    <TableCell className="text-right">{formatShares(p.shares)}</TableCell>
+                    <TableCell className={p.outcome === "YES" ? "text-yes" : "text-no"}>{p.outcome}</TableCell>
+                    <TableCell className="text-right font-mono">{formatShares(p.shares)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -85,7 +93,7 @@ export default async function PortfolioPage() {
         </CardContent>
       </Card>
 
-      <h2 className="mb-2 text-lg font-semibold tracking-tight">Open orders</h2>
+      <h2 className="mb-2 font-display text-lg font-semibold tracking-tight">Open orders</h2>
       <Card className="mb-6">
         <CardContent className="p-0">
           {openOrders.length === 0 ? (
@@ -110,10 +118,10 @@ export default async function PortfolioPage() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      {o.side} {o.outcome}
+                      {o.side} <span className={o.outcome === "YES" ? "text-yes" : "text-no"}>{o.outcome}</span>
                     </TableCell>
-                    <TableCell>{formatPercent(o.price)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="font-mono">{formatPercent(o.price)}</TableCell>
+                    <TableCell className="text-right font-mono">
                       {formatShares(o.filled_size)} / {formatShares(o.size)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -127,7 +135,7 @@ export default async function PortfolioPage() {
         </CardContent>
       </Card>
 
-      <h2 className="mb-2 text-lg font-semibold tracking-tight">Order history</h2>
+      <h2 className="mb-2 font-display text-lg font-semibold tracking-tight">Order history</h2>
       <Card>
         <CardContent className="p-0">
           {pastOrders.length === 0 ? (
@@ -152,10 +160,10 @@ export default async function PortfolioPage() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      {o.side} {o.outcome}
+                      {o.side} <span className={o.outcome === "YES" ? "text-yes" : "text-no"}>{o.outcome}</span>
                     </TableCell>
-                    <TableCell>{formatPercent(o.price)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="font-mono">{formatPercent(o.price)}</TableCell>
+                    <TableCell className="text-right font-mono">
                       {formatShares(o.filled_size)} / {formatShares(o.size)}
                     </TableCell>
                     <TableCell className="text-right capitalize">{o.status}</TableCell>

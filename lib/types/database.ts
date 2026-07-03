@@ -177,6 +177,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          kind: string | null
           maker_order_id: string | null
           market_id: string
           outcome: string
@@ -187,6 +188,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          kind?: string | null
           maker_order_id?: string | null
           market_id: string
           outcome: string
@@ -197,6 +199,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          kind?: string | null
           maker_order_id?: string | null
           market_id?: string
           outcome?: string
@@ -258,6 +261,7 @@ export type Database = {
       }
       place_order: {
         Args: {
+          p_ioc?: boolean
           p_market_id: string
           p_outcome: string
           p_price: number

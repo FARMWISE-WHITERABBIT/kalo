@@ -27,13 +27,13 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">Admin</h1>
+      <h1 className="mb-6 font-display text-2xl font-semibold tracking-tight">Admin</h1>
 
       <div className="mb-8">
         <CreateMarketForm />
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold tracking-tight">Open markets</h2>
+      <h2 className="mb-2 font-display text-lg font-semibold tracking-tight">Open markets</h2>
       <Card className="mb-8">
         <CardContent className="divide-y p-0">
           {openMarkets.length === 0 && <p className="p-4 text-sm text-muted-foreground">No open markets.</p>}
@@ -46,14 +46,19 @@ export default async function AdminPage() {
         </CardContent>
       </Card>
 
-      <h2 className="mb-2 text-lg font-semibold tracking-tight">Resolved markets</h2>
+      <h2 className="mb-2 font-display text-lg font-semibold tracking-tight">Resolved markets</h2>
       <Card>
         <CardContent className="divide-y p-0">
           {resolvedMarkets.length === 0 && <p className="p-4 text-sm text-muted-foreground">None yet.</p>}
           {resolvedMarkets.map((m) => (
             <div key={m.id} className="flex items-center justify-between gap-4 p-4">
               <span className="text-sm">{m.question}</span>
-              <Badge variant="outline">{m.resolved_outcome}</Badge>
+              <Badge
+                variant="outline"
+                className={m.resolved_outcome === "YES" ? "border-yes text-yes" : "border-no text-no"}
+              >
+                {m.resolved_outcome}
+              </Badge>
             </div>
           ))}
         </CardContent>

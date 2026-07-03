@@ -14,7 +14,7 @@ export function CreateMarketForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Create market</CardTitle>
+        <CardTitle className="font-display text-base">Create market</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-3" key={state?.success ? "reset" : "form"}>

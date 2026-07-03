@@ -25,11 +25,11 @@ export function SplitMergePanel({
   const maxMerge = Math.min(yesShares, noShares)
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Split / Merge</CardTitle>
+    <Card className="py-4">
+      <CardHeader className="px-4 pb-2">
+        <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Split / Merge</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4">
         <Tabs value={mode} onValueChange={(v) => setMode(v as "split" | "merge")}>
           <TabsList className="w-full">
             <TabsTrigger value="split" className="flex-1">

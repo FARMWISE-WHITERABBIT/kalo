@@ -12,7 +12,9 @@ export default async function LoginPage({
     <div className="flex min-h-[80vh] items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Log in to Kalo</CardTitle>
+          <CardTitle className="font-display text-lg">
+            Log in to KAL<span className="text-kola">O</span>
+          </CardTitle>
           <CardDescription>
             {confirm
               ? "Check your email to confirm your account, then log in."

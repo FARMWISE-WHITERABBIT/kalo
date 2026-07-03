@@ -21,3 +21,18 @@ export function formatPercent(price: number) {
 export function formatShares(shares: number) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(shares)
 }
+
+export function formatTradeKind(kind: string | null) {
+  switch (kind) {
+    case "transfer_yes":
+      return "transfer YES"
+    case "transfer_no":
+      return "transfer NO"
+    case "mint":
+      return "mint"
+    case "merge":
+      return "merge"
+    default:
+      return "trade"
+  }
+}

@@ -22,11 +22,11 @@ export function RedeemPanel({
   const winningShares = outcome === "YES" ? yesShares : outcome === "NO" ? noShares : 0
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Redeem</CardTitle>
+    <Card className="py-4">
+      <CardHeader className="px-4 pb-2">
+        <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Redeem</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 px-4">
         <p className="text-sm text-muted-foreground">
           Market resolved {outcome}. You hold {formatShares(winningShares)} winning shares.
         </p>

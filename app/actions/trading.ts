@@ -11,6 +11,7 @@ export async function placeOrder(_prev: ActionState, formData: FormData): Promis
   const side = String(formData.get("side") ?? "")
   const price = Number(formData.get("price"))
   const size = Number(formData.get("size"))
+  const ioc = formData.get("ioc") === "true"
 
   if (!marketId || !outcome || !side || !Number.isFinite(price) || !Number.isFinite(size)) {
     return { error: "Invalid order." }
@@ -23,6 +24,7 @@ export async function placeOrder(_prev: ActionState, formData: FormData): Promis
     p_side: side,
     p_price: price,
     p_size: size,
+    p_ioc: ioc,
   })
 
   if (error) {
