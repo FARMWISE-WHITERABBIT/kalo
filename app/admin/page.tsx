@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CreateMarketForm } from "./create-market-form"
 import { ResolveMarketButtons } from "./resolve-market-buttons"
+import { CommandCentre, type BotStatus } from "./command-centre"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -21,19 +22,28 @@ export default async function AdminPage() {
     redirect("/")
   }
 
-  const { data: markets } = await supabase.from("markets").select("*").order("created_at", { ascending: false })
+  const [{ data: markets }, { data: botStatus }] = await Promise.all([
+    supabase.from("markets").select("*").order("created_at", { ascending: false }),
+    supabase.rpc("bot_status"),
+  ])
   const openMarkets = (markets ?? []).filter((m) => m.status === "open")
   const resolvedMarkets = (markets ?? []).filter((m) => m.status === "resolved")
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 font-display text-2xl font-semibold tracking-tight">Admin</h1>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Command Centre</h1>
+
+      {botStatus && (
+        <div className="mb-8">
+          <CommandCentre status={botStatus as unknown as BotStatus} />
+        </div>
+      )}
 
       <div className="mb-8">
         <CreateMarketForm />
       </div>
 
-      <h2 className="mb-2 font-display text-lg font-semibold tracking-tight">Open markets</h2>
+      <h2 className="mb-2 text-lg font-bold tracking-tight">Open markets</h2>
       <Card className="mb-8">
         <CardContent className="divide-y p-0">
           {openMarkets.length === 0 && <p className="p-4 text-sm text-muted-foreground">No open markets.</p>}
@@ -46,7 +56,7 @@ export default async function AdminPage() {
         </CardContent>
       </Card>
 
-      <h2 className="mb-2 font-display text-lg font-semibold tracking-tight">Resolved markets</h2>
+      <h2 className="mb-2 text-lg font-bold tracking-tight">Resolved markets</h2>
       <Card>
         <CardContent className="divide-y p-0">
           {resolvedMarkets.length === 0 && <p className="p-4 text-sm text-muted-foreground">None yet.</p>}
