@@ -26,7 +26,9 @@ function timeLabel(t: number, spanMs: number) {
 // Market-page price history chart, Polymarket-style: blue line on the page
 // background, dashed gridlines with %-labels on the right, timeframe pills.
 export function BigChart({ points, meta }: { points: PricePoint[]; meta?: React.ReactNode }) {
-  const [win, setWin] = useState("ALL")
+  // Default to 1D: live prints are invisible at ALL zoom, and a stationary
+  // chart reads as a dead market.
+  const [win, setWin] = useState("1D")
   // During SSR the last trade's timestamp anchors the window; the wall clock
   // takes over after hydration.
   const clock = useNow()

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { MarketThumb } from "@/components/market-card"
 import { toYesLadder, tradeYesPrice } from "@/lib/orderbook"
 import type { OrderBookLevel, Trade, Position, Outcome } from "@/lib/types"
-import { RealtimeRefresher } from "./realtime-refresher"
+import { LiveRefresher } from "@/components/live-refresher"
 import { MarketWorkspace, type TapeEntry } from "./market-workspace"
 import { SplitMergePanel } from "./split-merge-panel"
 import { RedeemPanel } from "./redeem-panel"
@@ -149,7 +149,7 @@ export default async function MarketPage({
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-6">
-      {isOpen && <RealtimeRefresher marketId={id} />}
+      {isOpen && <LiveRefresher marketId={id} intervalMs={10000} />}
 
       <div className="mb-5">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

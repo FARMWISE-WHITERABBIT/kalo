@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Badge } from "@/components/ui/badge"
 import { CurrencyAmount } from "@/components/currency-amount"
 import { CategoryPills } from "@/components/category-pills"
+import { LiveRefresher } from "@/components/live-refresher"
 import { MarketCard, MarketThumb } from "@/components/market-card"
 import { FeaturedMarket } from "@/components/featured-market"
 import { tradeYesPrice } from "@/lib/orderbook"
@@ -72,6 +73,7 @@ export default async function MarketsPage({
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-6">
+      <LiveRefresher intervalMs={20000} />
       {showHero && (
         <>
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
