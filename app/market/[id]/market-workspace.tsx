@@ -42,6 +42,7 @@ type WorkspaceProps = {
   noShares: number
   loggedIn: boolean
   initialOutcome?: Outcome
+  minOrderSize?: number
   sidebarExtras?: React.ReactNode
 }
 
@@ -71,6 +72,7 @@ export function MarketWorkspace({
   noShares,
   loggedIn,
   initialOutcome = "YES",
+  minOrderSize = 1,
   sidebarExtras,
 }: WorkspaceProps) {
   const [outcome, setOutcome] = useState<Outcome>(initialOutcome)
@@ -460,7 +462,7 @@ export function MarketWorkspace({
                     id="size"
                     name="size"
                     type="number"
-                    min={0}
+                    min={minOrderSize}
                     step="0.01"
                     value={size}
                     onChange={(e) => setSize(e.target.value)}

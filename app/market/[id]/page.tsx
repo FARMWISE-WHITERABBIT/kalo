@@ -55,7 +55,8 @@ export default async function MarketPage({
   const points = [...marketTrades]
     .reverse()
     .map((t) => ({ t: new Date(t.created_at).getTime(), p: tradeYesPrice(t) }))
-  const volume = marketTrades.reduce((sum, t) => sum + t.price * t.size, 0)
+  // seed prints stay visible in charts but never count toward volume (I6)
+  const volume = marketTrades.filter((t) => !t.is_seed).reduce((sum, t) => sum + t.price * t.size, 0)
   const tape: TapeEntry[] = marketTrades.slice(0, 30).map((t) => ({
     id: t.id,
     priceYes: tradeYesPrice(t),
@@ -194,6 +195,7 @@ export default async function MarketPage({
         noShares={noShares}
         loggedIn={!!user}
         initialOutcome={initialOutcome}
+        minOrderSize={market.min_order_size}
         sidebarExtras={sidebarExtras}
       />
     </div>

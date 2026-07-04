@@ -21,9 +21,11 @@ import type { Market, Trade } from "@/lib/types"
 function marketStats(trades: Trade[], marketId: string) {
   const marketTrades = trades.filter((t) => t.market_id === marketId)
   const lastTrade = marketTrades[0]
-  const volume = marketTrades.reduce((sum, t) => sum + t.price * t.size, 0)
+  // seed (cosmetic backfill) prints never count toward volume ranking (I6)
+  const live = marketTrades.filter((t) => !t.is_seed)
+  const volume = live.reduce((sum, t) => sum + t.price * t.size, 0)
   const dayAgo = Date.now() - 24 * 60 * 60 * 1000
-  const volumeToday = marketTrades
+  const volumeToday = live
     .filter((t) => new Date(t.created_at).getTime() >= dayAgo)
     .reduce((sum, t) => sum + t.price * t.size, 0)
   return {
@@ -192,7 +194,7 @@ export default async function MarketsPage({
 
         {closedMarkets.length > 0 && (
           <>
-            <h2 className="mb-3 mt-12 text-2xl font-bold tracking-tight">Resolved</h2>
+            <h2 className="mb-3 mt-12 text-2xl font-bold tracking-tight">Closed &amp; resolved</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {closedMarkets.map((market) => (
                 <Link key={market.id} href={`/market/${market.id}`}>

@@ -107,9 +107,11 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          min_order_size: number
           question: string
           resolved_outcome: string | null
           status: string
+          tick_size: number
         }
         Insert: {
           category?: string | null
@@ -118,9 +120,11 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          min_order_size?: number
           question: string
           resolved_outcome?: string | null
           status?: string
+          tick_size?: number
         }
         Update: {
           category?: string | null
@@ -129,9 +133,11 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          min_order_size?: number
           question?: string
           resolved_outcome?: string | null
           status?: string
+          tick_size?: number
         }
         Relationships: [
           {
@@ -264,6 +270,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_seed: boolean
           kind: string | null
           maker_order_id: string | null
           market_id: string
@@ -275,6 +282,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_seed?: boolean
           kind?: string | null
           maker_order_id?: string | null
           market_id: string
@@ -286,6 +294,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_seed?: boolean
           kind?: string | null
           maker_order_id?: string | null
           market_id?: string
