@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Info, Menu } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,7 +12,8 @@ import { logout } from "@/app/actions/auth"
 import { CurrencyAmount } from "@/components/currency-amount"
 import { CurrencyPicker } from "@/components/currency-picker"
 import { SearchBar } from "@/components/search-bar"
-import { CategoryPills } from "@/components/category-pills"
+import { CategoryTabs } from "@/components/category-tabs"
+import { Logo } from "@/components/logo"
 
 export async function Nav() {
   const supabase = await createClient()
@@ -35,22 +37,33 @@ export async function Nav() {
   ).sort()
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-background">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
-        <Link href="/" className="shrink-0 font-display text-xl font-extrabold tracking-tight">
-          KAL<span className="text-kola">O</span>
-        </Link>
+    <header className="sticky top-0 z-10 border-b border-border/60 bg-background/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-4">
+        <Logo />
 
         <SearchBar />
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <Link
+            href="/#how-it-works"
+            className="mr-2 hidden items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 lg:flex"
+          >
+            <Info className="size-4" />
+            How it works
+          </Link>
+
           {user && profile ? (
             <>
-              <CurrencyAmount usd={profile.balance} className="text-sm text-kola font-semibold" />
+              <Link href="/portfolio" className="mr-1 hidden text-right sm:block">
+                <div className="text-sm font-semibold leading-tight text-yes">
+                  <CurrencyAmount usd={profile.balance} className="text-sm" />
+                </div>
+                <div className="text-[11px] leading-tight text-muted-foreground">Cash</div>
+              </Link>
               <CurrencyPicker />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="font-medium">
                     {profile.display_name}
                   </Button>
                 </DropdownMenuTrigger>
@@ -76,19 +89,30 @@ export async function Nav() {
           ) : (
             <>
               <CurrencyPicker />
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/login">Log in</Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="font-semibold text-primary hover:text-primary"
+                asChild
+              >
+                <Link href="/login">Log In</Link>
               </Button>
-              <Button size="sm" asChild>
-                <Link href="/signup">Sign up</Link>
+              <Button
+                size="sm"
+                className="h-9 rounded-lg bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90"
+                asChild
+              >
+                <Link href="/signup">Sign Up</Link>
               </Button>
             </>
           )}
+
+          <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Menu">
+            <Menu className="size-5" />
+          </Button>
         </div>
       </div>
-      <div className="mx-auto max-w-6xl px-4 pb-2">
-        <CategoryPills categories={categories} />
-      </div>
+      <CategoryTabs categories={categories} />
     </header>
   )
 }

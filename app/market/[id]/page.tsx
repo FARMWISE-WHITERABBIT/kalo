@@ -1,15 +1,11 @@
 import { notFound } from "next/navigation"
+import { Bookmark, CodeXml, Link2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CurrencyAmount } from "@/components/currency-amount"
-import { OrderLadder } from "@/components/order-ladder"
-import { BigChart } from "@/components/big-chart"
+import { MarketThumb } from "@/components/market-card"
 import { toYesLadder, tradeYesPrice } from "@/lib/orderbook"
-import { formatShares, formatTradeKind } from "@/lib/utils"
 import type { OrderBookLevel, Trade, Position, Outcome } from "@/lib/types"
 import { RealtimeRefresher } from "./realtime-refresher"
-import { MarketWorkspace } from "./market-workspace"
+import { MarketWorkspace, type TapeEntry } from "./market-workspace"
 import { SplitMergePanel } from "./split-merge-panel"
 import { RedeemPanel } from "./redeem-panel"
 import { ResolveMarketButtons } from "@/app/admin/resolve-market-buttons"
@@ -31,7 +27,7 @@ export default async function MarketPage({
   }] = await Promise.all([
     supabase.from("markets").select("*").eq("id", id).single(),
     supabase.rpc("get_order_book", { p_market_id: id }),
-    supabase.from("trades").select("*").eq("market_id", id).order("created_at", { ascending: false }).limit(30),
+    supabase.from("trades").select("*").eq("market_id", id).order("created_at", { ascending: false }).limit(200),
     supabase.auth.getUser(),
   ])
 
@@ -55,157 +51,91 @@ export default async function MarketPage({
   const book: OrderBookLevel[] = bookRows ?? []
   const marketTrades: Trade[] = trades ?? []
   const ladder = toYesLadder(book)
-  const chronological = [...marketTrades].reverse().map(tradeYesPrice)
-  const yesPrice = marketTrades[0] ? tradeYesPrice(marketTrades[0]) : 0.5
+  const points = [...marketTrades]
+    .reverse()
+    .map((t) => ({ t: new Date(t.created_at).getTime(), p: tradeYesPrice(t) }))
+  const volume = marketTrades.reduce((sum, t) => sum + t.price * t.size, 0)
+  const tape: TapeEntry[] = marketTrades.slice(0, 30).map((t) => ({
+    id: t.id,
+    priceYes: tradeYesPrice(t),
+    size: t.size,
+    kind: t.kind,
+    createdAt: t.created_at,
+  }))
 
   const yesShares = positions.find((p) => p.outcome === "YES")?.shares ?? 0
   const noShares = positions.find((p) => p.outcome === "NO")?.shares ?? 0
   const resolvedOutcome = market.resolved_outcome as Outcome | null
   const isOpen = market.status === "open"
 
+  const sidebarExtras = (
+    <>
+      {user && isOpen && (
+        <SplitMergePanel marketId={id} balance={balance} yesShares={yesShares} noShares={noShares} />
+      )}
+      {user && !isOpen && market.status === "resolved" && (
+        <RedeemPanel marketId={id} outcome={resolvedOutcome} yesShares={yesShares} noShares={noShares} />
+      )}
+      {isAdmin && isOpen && (
+        <div className="rounded-xl border border-border/60 bg-card p-4">
+          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Admin
+          </div>
+          <ResolveMarketButtons marketId={id} question={market.question} />
+        </div>
+      )}
+    </>
+  )
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-[1200px] px-4 py-6">
       {isOpen && <RealtimeRefresher marketId={id} />}
 
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-2xl">
-          <div className="mb-2 flex items-center gap-2">
-            <Badge variant="secondary">{market.category ?? "General"}</Badge>
-            {market.status === "resolved" && (
-              <Badge
-                variant="outline"
-                className={resolvedOutcome === "YES" ? "border-yes text-yes" : "border-no text-no"}
-              >
-                RESOLVED {resolvedOutcome}
-              </Badge>
-            )}
-          </div>
-          <h1 className="font-display text-xl font-semibold leading-snug tracking-tight">
-            {market.question}
-          </h1>
-          {market.description && <p className="mt-2 text-sm text-muted-foreground">{market.description}</p>}
-          {market.close_at && (
-            <p className="mt-2 font-mono text-xs text-muted-foreground">
-              Closes {new Date(market.close_at).toLocaleDateString()}
-            </p>
+      <div className="mb-5">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{market.category ?? "General"}</span>
+          {market.status === "resolved" && (
+            <>
+              <span aria-hidden="true">&middot;</span>
+              <span className={resolvedOutcome === "YES" ? "text-yes" : "text-no"}>
+                Resolved {resolvedOutcome === "YES" ? "Yes" : "No"}
+              </span>
+            </>
           )}
         </div>
-        <div className="text-right">
-          <div className="font-mono text-4xl font-semibold leading-none text-kola">
-            {Math.round(yesPrice * 100)}
-            <span className="text-xl">%</span>
+        <div className="mt-2 flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <MarketThumb category={market.category} size={60} className="rounded-xl" />
+            <h1 className="text-2xl font-bold leading-snug tracking-tight sm:text-3xl">
+              {market.question}
+            </h1>
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">implied probability</div>
+          <div className="mt-2 flex shrink-0 items-center gap-3 text-muted-foreground">
+            <CodeXml className="size-4.5 transition-colors hover:text-foreground" />
+            <Link2 className="size-4.5 transition-colors hover:text-foreground" />
+            <Bookmark className="size-4.5 transition-colors hover:text-foreground" />
+          </div>
         </div>
       </div>
 
-      <Card className="mb-4 py-4">
-        <CardContent className="px-4">
-          <BigChart data={chronological} />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        {user && isOpen ? (
-          <MarketWorkspace
-            marketId={id}
-            ladder={ladder}
-            yesShares={yesShares}
-            noShares={noShares}
-            initialOutcome={initialOutcome}
-          />
-        ) : (
-          <>
-            <OrderLadder ladder={ladder} yesShares={yesShares} />
-            <Card className="py-4">
-              <CardContent className="px-4 text-sm text-muted-foreground">
-                {!user ? "Log in to trade this market." : "This market is resolved — trading is closed."}
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        <div className="space-y-4">
-          <Card className="py-4">
-            <CardHeader className="px-4 pb-2">
-              <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Tape</CardTitle>
-            </CardHeader>
-            <CardContent className="max-h-64 overflow-y-auto px-4">
-              {marketTrades.length === 0 && <p className="text-xs text-muted-foreground">No trades yet.</p>}
-              <div className="space-y-1">
-                {marketTrades.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between font-mono text-xs">
-                    <span>
-                      {Math.round(tradeYesPrice(t) * 100)}% × {formatShares(t.size)}
-                    </span>
-                    <span className="text-muted-foreground">{formatTradeKind(t.kind)}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {user && isOpen && <SplitMergePanel marketId={id} balance={balance} yesShares={yesShares} noShares={noShares} />}
-          {user && !isOpen && market.status === "resolved" && (
-            <RedeemPanel marketId={id} outcome={resolvedOutcome} yesShares={yesShares} noShares={noShares} />
-          )}
-
-          {isAdmin && isOpen && (
-            <Card className="py-4">
-              <CardHeader className="px-4 pb-2">
-                <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Admin</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4">
-                <ResolveMarketButtons marketId={id} question={market.question} />
-              </CardContent>
-            </Card>
-          )}
-
-          {user && (yesShares > 0 || noShares > 0) && (
-            <Card className="py-4">
-              <CardHeader className="px-4 pb-2">
-                <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Your position
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 px-4 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-yes">YES shares</span>
-                  <span className="font-mono">{formatShares(yesShares)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-no">NO shares</span>
-                  <span className="font-mono">{formatShares(noShares)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-
-      <details className="mt-6 group">
-        <summary className="cursor-pointer text-xs font-medium text-kola">
-          Under the hood — how settlement works
-        </summary>
-        <div className="mt-3 max-w-2xl space-y-3 rounded-lg border border-border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
-          <p>
-            Kalo keeps one canonical order book per market, in YES terms — a bid to buy NO at{" "}
-            <CurrencyAmount usd={0.4} className="text-foreground" /> is the same thing as an ask on YES at
-            the complement price, so both sides share one book and one spread.
-          </p>
-          <p>
-            The matching engine runs price-time priority and settles each cross one of four ways:{" "}
-            <em>transfer</em> (a buyer and seller of the same outcome swap existing contracts),{" "}
-            <em>mint</em> (a YES buyer and a NO buyer whose prices sum to at least $1 jointly fund a new
-            contract pair), and <em>merge</em> (a YES seller and a NO seller surrender a pair, burned for
-            the $1 collateral split between them). The tape above labels each print with its settlement type.
-          </p>
-          <p className="mb-0">
-            Every contract pair is fully collateralized in Postgres at creation — the house never carries
-            outcome risk. Losers fund winners.
-          </p>
-        </div>
-      </details>
+      <MarketWorkspace
+        marketId={id}
+        question={market.question}
+        category={market.category}
+        description={market.description}
+        closeAt={market.close_at}
+        isOpen={isOpen}
+        resolvedOutcome={resolvedOutcome}
+        points={points}
+        ladder={ladder}
+        tape={tape}
+        volume={volume}
+        yesShares={yesShares}
+        noShares={noShares}
+        loggedIn={!!user}
+        initialOutcome={initialOutcome}
+        sidebarExtras={sidebarExtras}
+      />
     </div>
   )
 }

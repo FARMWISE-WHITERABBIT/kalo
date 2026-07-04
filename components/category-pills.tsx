@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 
+// Filter chips shown above the "All markets" grid.
 export function CategoryPills({ categories }: { categories: string[] }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -20,16 +21,16 @@ export function CategoryPills({ categories }: { categories: string[] }) {
   const isHome = pathname === "/"
 
   return (
-    <nav className="flex items-center gap-1 overflow-x-auto">
+    <nav className="no-scrollbar flex items-center gap-2 overflow-x-auto">
       {[null, ...categories].map((c) => (
         <Link
           key={c ?? "all"}
           href={hrefFor(c)}
           className={cn(
-            "shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors",
+            "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
             isHome && active === c
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              ? "bg-primary/20 text-primary"
+              : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
           )}
         >
           {c ?? "All"}

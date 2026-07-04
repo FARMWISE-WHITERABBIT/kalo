@@ -10,5 +10,5 @@ import { cn } from "@/lib/utils"
 // own currency.
 export function CurrencyAmount({ usd, className }: { usd: number; className?: string }) {
   const { currency } = useCurrency()
-  return <span className={cn("font-mono tabular-nums", className)}>{formatCurrency(usd, currency)}</span>
+  return <span className={cn("tabular-nums", className)}>{formatCurrency(usd, currency)}</span>
 }

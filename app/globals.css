@@ -53,78 +53,83 @@
 }
 
 :root {
-  --background: #14172a;
-  --foreground: #eae7db;
-  --card: #1c2138;
-  --card-foreground: #eae7db;
-  --popover: #232945;
-  --popover-foreground: #eae7db;
-  --primary: #ff6b35;
-  --primary-foreground: #10131f;
-  --secondary: #232945;
-  --secondary-foreground: #eae7db;
-  --muted: #1c2138;
-  --muted-foreground: #8d92ac;
-  --accent: #232945;
-  --accent-foreground: #eae7db;
-  --destructive: #ff5c6c;
-  --border: #2e3557;
-  --input: #2e3557;
-  --ring: #ff6b35;
-  --yes: #3ddc97;
-  --no: #ff5c6c;
-  --kola: #ff6b35;
-  --chart-1: #ff6b35;
-  --chart-2: #3ddc97;
-  --chart-3: #ff5c6c;
-  --chart-4: #8d92ac;
-  --chart-5: #eae7db;
-  --radius: 0.5rem;
-  --sidebar: #1c2138;
-  --sidebar-foreground: #eae7db;
-  --sidebar-primary: #ff6b35;
-  --sidebar-primary-foreground: #10131f;
-  --sidebar-accent: #232945;
-  --sidebar-accent-foreground: #eae7db;
-  --sidebar-border: #2e3557;
-  --sidebar-ring: #ff6b35;
+  --font-sans: "Inter", "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "IBM Plex Mono", Menlo, Consolas,
+    monospace;
+  --font-display: var(--font-sans);
+  --background: #10161f;
+  --foreground: #e9eef4;
+  --card: #1a2330;
+  --card-foreground: #e9eef4;
+  --popover: #202c3b;
+  --popover-foreground: #e9eef4;
+  --primary: #2e90fa;
+  --primary-foreground: #ffffff;
+  --secondary: #243144;
+  --secondary-foreground: #e9eef4;
+  --muted: #1a2330;
+  --muted-foreground: #8296ab;
+  --accent: #243144;
+  --accent-foreground: #e9eef4;
+  --destructive: #f05b5b;
+  --border: #263140;
+  --input: #263140;
+  --ring: #2e90fa;
+  --yes: #35b877;
+  --no: #f05b5b;
+  --kola: #2e90fa;
+  --chart-1: #2e90fa;
+  --chart-2: #e7b416;
+  --chart-3: #f7862c;
+  --chart-4: #8296ab;
+  --chart-5: #35b877;
+  --radius: 0.75rem;
+  --sidebar: #1a2330;
+  --sidebar-foreground: #e9eef4;
+  --sidebar-primary: #2e90fa;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #243144;
+  --sidebar-accent-foreground: #e9eef4;
+  --sidebar-border: #263140;
+  --sidebar-ring: #2e90fa;
 }
 
 .dark {
-  --background: #14172a;
-  --foreground: #eae7db;
-  --card: #1c2138;
-  --card-foreground: #eae7db;
-  --popover: #232945;
-  --popover-foreground: #eae7db;
-  --primary: #ff6b35;
-  --primary-foreground: #10131f;
-  --secondary: #232945;
-  --secondary-foreground: #eae7db;
-  --muted: #1c2138;
-  --muted-foreground: #8d92ac;
-  --accent: #232945;
-  --accent-foreground: #eae7db;
-  --destructive: #ff5c6c;
-  --border: #2e3557;
-  --input: #2e3557;
-  --ring: #ff6b35;
-  --yes: #3ddc97;
-  --no: #ff5c6c;
-  --kola: #ff6b35;
-  --chart-1: #ff6b35;
-  --chart-2: #3ddc97;
-  --chart-3: #ff5c6c;
-  --chart-4: #8d92ac;
-  --chart-5: #eae7db;
-  --sidebar: #1c2138;
-  --sidebar-foreground: #eae7db;
-  --sidebar-primary: #ff6b35;
-  --sidebar-primary-foreground: #10131f;
-  --sidebar-accent: #232945;
-  --sidebar-accent-foreground: #eae7db;
-  --sidebar-border: #2e3557;
-  --sidebar-ring: #ff6b35;
+  --background: #10161f;
+  --foreground: #e9eef4;
+  --card: #1a2330;
+  --card-foreground: #e9eef4;
+  --popover: #202c3b;
+  --popover-foreground: #e9eef4;
+  --primary: #2e90fa;
+  --primary-foreground: #ffffff;
+  --secondary: #243144;
+  --secondary-foreground: #e9eef4;
+  --muted: #1a2330;
+  --muted-foreground: #8296ab;
+  --accent: #243144;
+  --accent-foreground: #e9eef4;
+  --destructive: #f05b5b;
+  --border: #263140;
+  --input: #263140;
+  --ring: #2e90fa;
+  --yes: #35b877;
+  --no: #f05b5b;
+  --kola: #2e90fa;
+  --chart-1: #2e90fa;
+  --chart-2: #e7b416;
+  --chart-3: #f7862c;
+  --chart-4: #8296ab;
+  --chart-5: #35b877;
+  --sidebar: #1a2330;
+  --sidebar-foreground: #e9eef4;
+  --sidebar-primary: #2e90fa;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #243144;
+  --sidebar-accent-foreground: #e9eef4;
+  --sidebar-border: #263140;
+  --sidebar-ring: #2e90fa;
 }
 
 @layer base {
@@ -136,5 +141,14 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
