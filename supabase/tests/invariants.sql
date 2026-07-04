@@ -50,15 +50,17 @@ begin
     and (select status from public.orders where id = o) = 'cancelled',
     'i4: close flushed the resting BUY');
 
-  -- resolve YES (admin) and redeem
+  -- resolve YES (admin): auto-redemption pays winners at resolution (0011),
+  -- and the parity redeem path settles any holder idempotently (0013)
   update public.profiles set is_admin = true where id = u1;
   perform kalo_test.act_as(u1);
   perform public.resolve_market(m, 'YES');
-  perform public.redeem_market(m);
+  perform public.redeem_market(m);  -- already auto-redeemed: no-op, no raise
   perform kalo_test.act_as(u2);
-  perform kalo_test.expect_error(
-    format('select public.redeem_market(%L)', m),
-    'loser redeeming with no winning shares');
+  perform public.redeem_market(m);  -- loser-only holder: no-op, no raise
+  perform kalo_test.check(
+    (select balance from public.profiles where id = u2) = 980,
+    'i4: loser parity redeem is a no-op on balance');
 
   -- exact conservation for the pair: u1 = 1000 - 0.60*50 + 50 = 1020,
   -- u2 = 1000 - 0.40*50 = 980; sum = exactly what was minted for them
