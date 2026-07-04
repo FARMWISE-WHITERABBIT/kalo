@@ -389,8 +389,25 @@ export type Database = {
       bot_provision: { Args: never; Returns: number }
       bot_status: { Args: never; Returns: Json }
       bot_tick: { Args: never; Returns: undefined }
+      accept_resolution_suggestion: {
+        Args: { p_suggestion_id: number }
+        Returns: undefined
+      }
+      approve_market_proposal: {
+        Args: { p_proposal_id: number }
+        Returns: string
+      }
       cancel_order: { Args: { p_order_id: string }; Returns: undefined }
       claim_faucet: { Args: never; Returns: Json }
+      curation_queue: { Args: never; Returns: Json }
+      dismiss_resolution_suggestion: {
+        Args: { p_suggestion_id: number }
+        Returns: undefined
+      }
+      reject_market_proposal: {
+        Args: { p_proposal_id: number }
+        Returns: undefined
+      }
       leaderboard: {
         Args: { p_limit?: number }
         Returns: {

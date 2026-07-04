@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { CreateMarketForm } from "./create-market-form"
 import { ResolveMarketButtons } from "./resolve-market-buttons"
 import { CommandCentre, type BotStatus } from "./command-centre"
+import { CurationQueuePanel, type CurationQueue } from "./curation-queue"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -22,9 +23,10 @@ export default async function AdminPage() {
     redirect("/")
   }
 
-  const [{ data: markets }, { data: botStatus }] = await Promise.all([
+  const [{ data: markets }, { data: botStatus }, { data: curationQueue }] = await Promise.all([
     supabase.from("markets").select("*").order("created_at", { ascending: false }),
     supabase.rpc("bot_status"),
+    supabase.rpc("curation_queue"),
   ])
   const openMarkets = (markets ?? []).filter((m) => m.status === "open")
   const resolvedMarkets = (markets ?? []).filter((m) => m.status === "resolved")
@@ -36,6 +38,12 @@ export default async function AdminPage() {
       {botStatus && (
         <div className="mb-8">
           <CommandCentre status={botStatus as unknown as BotStatus} />
+        </div>
+      )}
+
+      {curationQueue && (
+        <div className="mb-8">
+          <CurationQueuePanel queue={curationQueue as unknown as CurationQueue} />
         </div>
       )}
 

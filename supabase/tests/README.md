@@ -15,6 +15,7 @@ which fails the psql run / CI step.
 | `fuzz.sql` | seeded 400-op random stream (places/cancels/splits/IOC) with `assert_invariants()` every 100 ops |
 | `order_types.sql` | M2: P0-7 idempotent submission (same `client_order_id` → same order, single escrow), FOK all-or-cancel (reject leaves balance untouched), GTD validation/matching-exclusion/cron reclamation, P0-8 fee hooks at zero (fee_amount = 0, treasury flat), auto-redemption at resolution |
 | `resolution_conservation.sql` | I7 (0013): OI frozen pre-payout at resolution, parity redeem records against it, loser redeem is a no-op — **plus the negative tests proving I7 fires** on payout-ledger corruption and post-resolution share resurrection, and that I1 fires on a raw double-credit |
+| `news_curation.sql` | news engine + curation (0014/0015): ingest → impact → market-state shock → proposal, non-admin approval rejected, §8.7 checklist-failing proposal rejected, approval creates the market, resolution suggestion → accept resolves with I7 snapshot, persona burst + all invariants green |
 | `concurrency_resolve_race.sh` | deterministic resolve/place race: session A holds the advisory lock inside the resolve gap while session B fires an order; PASS = B serialized + rejected + zero residue + I1/I7 green. `LOCK=off` control run demonstrates the lock is load-bearing. Needs a direct `DATABASE_URL` to a disposable stack |
 | `concurrency.sql` | parallel sessions via dblink (skips with a notice when dblink is unavailable); supplemented by continuous HFT-bot load + the 10-minute `record_invariants()` cron |
 
