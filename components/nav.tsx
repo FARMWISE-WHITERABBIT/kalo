@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Info, Menu } from "lucide-react"
+import { Info } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import {
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { NavMenu } from "@/components/nav-menu"
 import { logout } from "@/app/actions/auth"
 import { CurrencyAmount } from "@/components/currency-amount"
 import { CurrencyPicker } from "@/components/currency-picker"
@@ -107,37 +108,7 @@ export async function Nav() {
             </>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Menu">
-                <Menu className="size-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <Link href="/">Markets</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/portfolio">Portfolio</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/#how-it-works">How it works</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/admin">Create a market</Link>
-              </DropdownMenuItem>
-              {!user && (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link href="/login">Log In</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/signup">Sign Up</Link>
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <NavMenu />
         </div>
       </div>
       <CategoryTabs categories={categories} />

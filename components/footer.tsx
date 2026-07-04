@@ -66,10 +66,10 @@ export async function Footer() {
           <div className="min-w-40">
             <div className="mb-6 text-[15px] text-muted-foreground">Support &amp; Social</div>
             <ul className="space-y-5 text-[15px] font-medium">
-              <li><Link href="/#how-it-works" className="hover:text-primary">Learn</Link></li>
-              <li><Link href="/portfolio" className="hover:text-primary">Portfolio</Link></li>
+              <li><Link href="/docs" className="hover:text-primary">Learn</Link></li>
+              <li><Link href="/docs#help" className="hover:text-primary">Help Center</Link></li>
+              <li><Link href="/status" className="hover:text-primary">Status</Link></li>
               <li><Link href="/login" className="hover:text-primary">Log In</Link></li>
-              <li><Link href="/signup" className="hover:text-primary">Sign Up</Link></li>
               <li><a href="mailto:hello@kalo.example" className="hover:text-primary">Contact us</a></li>
             </ul>
           </div>
@@ -77,10 +77,11 @@ export async function Footer() {
           <div className="min-w-40">
             <div className="mb-6 text-[15px] text-muted-foreground">Kalo</div>
             <ul className="space-y-5 text-[15px] font-medium">
-              <li><Link href="/" className="hover:text-primary">Markets</Link></li>
-              <li><Link href="/portfolio" className="hover:text-primary">Leaderboard</Link></li>
-              <li><Link href="/admin" className="hover:text-primary">Create a market</Link></li>
-              <li><Link href="/#how-it-works" className="hover:text-primary">How it works</Link></li>
+              <li><Link href="/rewards" className="hover:text-primary">Rewards</Link></li>
+              <li><Link href="/docs#api" className="hover:text-primary">APIs</Link></li>
+              <li><Link href="/leaderboard" className="hover:text-primary">Leaderboard</Link></li>
+              <li><Link href="/accuracy" className="hover:text-primary">Accuracy</Link></li>
+              <li><Link href="/terms" className="hover:text-primary">Terms of Use</Link></li>
             </ul>
           </div>
         </div>
@@ -94,11 +95,11 @@ export async function Footer() {
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-foreground/80">Kalo &copy; {new Date().getFullYear()}</span>
             <span aria-hidden="true">&middot;</span>
-            <Link href="/#how-it-works" className="hover:text-foreground">How it works</Link>
+            <Link href="/terms" className="hover:text-foreground">Terms of Use</Link>
             <span aria-hidden="true">&middot;</span>
-            <Link href="/" className="hover:text-foreground">Markets</Link>
+            <Link href="/docs" className="hover:text-foreground">Docs</Link>
             <span aria-hidden="true">&middot;</span>
-            <Link href="/portfolio" className="hover:text-foreground">Portfolio</Link>
+            <Link href="/docs#help" className="hover:text-foreground">Help Center</Link>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             <Globe className="size-4" />

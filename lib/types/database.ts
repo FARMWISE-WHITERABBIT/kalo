@@ -73,6 +73,38 @@ export type Database = {
           },
         ]
       }
+      faucet_claims: {
+        Row: {
+          amount: number
+          claimed_at: string
+          id: number
+          streak: number
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          claimed_at?: string
+          id?: never
+          streak: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          claimed_at?: string
+          id?: never
+          streak?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faucet_claims_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bot_traders: {
         Row: {
           created_at: string
@@ -358,6 +390,17 @@ export type Database = {
       bot_status: { Args: never; Returns: Json }
       bot_tick: { Args: never; Returns: undefined }
       cancel_order: { Args: { p_order_id: string }; Returns: undefined }
+      claim_faucet: { Args: never; Returns: Json }
+      leaderboard: {
+        Args: { p_limit?: number }
+        Returns: {
+          display_name: string
+          is_bot: boolean
+          pnl: number
+          volume: number
+        }[]
+      }
+      system_status: { Args: never; Returns: Json }
       create_market: {
         Args: {
           p_category: string

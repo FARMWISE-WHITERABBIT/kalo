@@ -16,8 +16,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased dark">
+    <html lang="en" className="h-full antialiased dark" suppressHydrationWarning>
       <body className="min-h-full flex flex-col font-sans">
+        {/* apply the stored theme before first paint; dark is the default */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('kalo-theme')==='light')document.documentElement.classList.remove('dark')}catch(e){}",
+          }}
+        />
         <CurrencyProvider>
           <Nav />
           <main className="flex-1">{children}</main>
