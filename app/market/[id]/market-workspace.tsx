@@ -470,26 +470,29 @@ export function MarketWorkspace({
                 </div>
 
                 <div className="mt-1 flex justify-end gap-1.5">
-                  {side === "BUY" ? (
-                    [1, 10, 50, 100].map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setSize(String((Number(size) || 0) + n))}
-                        className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground/80 transition-colors hover:bg-secondary/70"
-                      >
-                        +{n}
-                      </button>
-                    ))
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setSize(String(ownedShares))}
-                      className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground/80 transition-colors hover:bg-secondary/70"
-                    >
-                      Max {formatShares(ownedShares)}
-                    </button>
-                  )}
+                  {side === "BUY"
+                    ? [1, 10, 50, 100].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setSize(String((Number(size) || 0) + n))}
+                          className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground/80 transition-colors hover:bg-secondary/70"
+                        >
+                          +{n}
+                        </button>
+                      ))
+                    : [25, 50, 75, 100].map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() =>
+                            setSize(String(Math.floor(ownedShares * pct) / 100))
+                          }
+                          className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground/80 transition-colors hover:bg-secondary/70"
+                        >
+                          {pct === 100 ? "Max" : `${pct}%`}
+                        </button>
+                      ))}
                 </div>
 
                 <div className="mt-3 min-h-4 text-xs text-muted-foreground">

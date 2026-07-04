@@ -107,9 +107,37 @@ export async function Nav() {
             </>
           )}
 
-          <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Menu">
-            <Menu className="size-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Menu">
+                <Menu className="size-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link href="/">Markets</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/portfolio">Portfolio</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/#how-it-works">How it works</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin">Create a market</Link>
+              </DropdownMenuItem>
+              {!user && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href="/login">Log In</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/signup">Sign Up</Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <CategoryTabs categories={categories} />

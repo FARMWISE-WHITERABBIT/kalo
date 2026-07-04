@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Bookmark, CodeXml, Link2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
@@ -68,6 +69,35 @@ export default async function MarketPage({
   const resolvedOutcome = market.resolved_outcome as Outcome | null
   const isOpen = market.status === "open"
 
+  // Related markets for the right rail: same category first, then whatever
+  // else is open; each with its most recent traded YES price.
+  const { data: otherMarkets } = await supabase
+    .from("markets")
+    .select("*")
+    .eq("status", "open")
+    .neq("id", id)
+    .limit(30)
+  const related = [...(otherMarkets ?? [])]
+    .sort((a, b) => {
+      const aSame = a.category === market.category ? 0 : 1
+      const bSame = b.category === market.category ? 0 : 1
+      return aSame - bSame
+    })
+    .slice(0, 5)
+  let relatedPrices = new Map<string, number>()
+  if (related.length > 0) {
+    const { data: relTrades } = await supabase
+      .from("trades")
+      .select("market_id, outcome, price, created_at")
+      .in("market_id", related.map((m) => m.id))
+      .order("created_at", { ascending: false })
+      .limit(150)
+    relatedPrices = new Map()
+    for (const t of relTrades ?? []) {
+      if (!relatedPrices.has(t.market_id)) relatedPrices.set(t.market_id, tradeYesPrice(t))
+    }
+  }
+
   const sidebarExtras = (
     <>
       {user && isOpen && (
@@ -82,6 +112,36 @@ export default async function MarketPage({
             Admin
           </div>
           <ResolveMarketButtons marketId={id} question={market.question} />
+        </div>
+      )}
+
+      {related.length > 0 && (
+        <div className="pt-2">
+          <div className="mb-1 text-[15px] font-semibold">
+            More {market.category ?? "open"} markets
+          </div>
+          <div className="divide-y divide-border/40">
+            {related.map((m) => {
+              const p = relatedPrices.get(m.id)
+              return (
+                <Link
+                  key={m.id}
+                  href={`/market/${m.id}`}
+                  className="group flex items-center gap-2.5 py-2.5"
+                >
+                  <MarketThumb category={m.category} size={28} className="rounded-md" />
+                  <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
+                    <span className="line-clamp-2 group-hover:text-primary">{m.question}</span>
+                  </span>
+                  {p !== undefined && (
+                    <span className="shrink-0 text-lg font-bold tabular-nums">
+                      {Math.round(p * 100)}%
+                    </span>
+                  )}
+                </Link>
+              )
+            })}
+          </div>
         </div>
       )}
     </>
