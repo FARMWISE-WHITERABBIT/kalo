@@ -14,8 +14,16 @@ import { SplitMergePanel } from "./split-merge-panel"
 import { RedeemPanel } from "./redeem-panel"
 import { ResolveMarketButtons } from "@/app/admin/resolve-market-buttons"
 
-export default async function MarketPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MarketPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ buy?: string }>
+}) {
   const { id } = await params
+  const { buy } = await searchParams
+  const initialOutcome: Outcome = buy === "NO" ? "NO" : "YES"
   const supabase = await createClient()
 
   const [{ data: market }, { data: bookRows }, { data: trades }, {
@@ -99,7 +107,13 @@ export default async function MarketPage({ params }: { params: Promise<{ id: str
 
       <div className="grid gap-4 lg:grid-cols-3">
         {user && isOpen ? (
-          <MarketWorkspace marketId={id} ladder={ladder} yesShares={yesShares} noShares={noShares} />
+          <MarketWorkspace
+            marketId={id}
+            ladder={ladder}
+            yesShares={yesShares}
+            noShares={noShares}
+            initialOutcome={initialOutcome}
+          />
         ) : (
           <>
             <OrderLadder ladder={ladder} yesShares={yesShares} />

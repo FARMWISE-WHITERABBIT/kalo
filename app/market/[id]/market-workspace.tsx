@@ -17,13 +17,15 @@ export function MarketWorkspace({
   ladder,
   yesShares,
   noShares,
+  initialOutcome = "YES",
 }: {
   marketId: string
   ladder: Ladder
   yesShares: number
   noShares: number
+  initialOutcome?: Outcome
 }) {
-  const [outcome, setOutcome] = useState<Outcome>("YES")
+  const [outcome, setOutcome] = useState<Outcome>(initialOutcome)
   const [side, setSide] = useState<OrderSide>("BUY")
   const [mode, setMode] = useState<"LIMIT" | "MARKET">("LIMIT")
   const [price, setPrice] = useState("50")

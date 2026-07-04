@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Unbounded, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { CurrencyProvider } from "@/components/currency-provider";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         <CurrencyProvider>
           <Nav />
           <main className="flex-1">{children}</main>
+          <Footer />
           <Toaster />
         </CurrencyProvider>
       </body>

@@ -1,22 +1,33 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CurrencyAmount } from "@/components/currency-amount"
-import { Spark } from "@/components/spark"
 import { tradeYesPrice } from "@/lib/orderbook"
+import { categoryColor, categoryInitial } from "@/lib/avatar"
+import { cn } from "@/lib/utils"
 import type { Market, Trade } from "@/lib/types"
 
 function marketStats(trades: Trade[], marketId: string) {
   const marketTrades = trades.filter((t) => t.market_id === marketId)
-  const chronological = [...marketTrades].reverse() // trades are fetched newest-first
   const lastTrade = marketTrades[0]
   const volume = marketTrades.reduce((sum, t) => sum + t.price * t.size, 0)
   return {
     yesPrice: lastTrade ? tradeYesPrice(lastTrade) : 0.5,
     volume,
-    history: chronological.map(tradeYesPrice),
   }
+}
+
+function MarketThumb({ category }: { category: string | null }) {
+  return (
+    <div
+      className="flex size-10 shrink-0 items-center justify-center rounded-lg font-display text-sm font-bold text-white"
+      style={{ backgroundColor: categoryColor(category) }}
+      aria-hidden="true"
+    >
+      {categoryInitial(category)}
+    </div>
+  )
 }
 
 export default async function MarketsPage({
@@ -63,62 +74,74 @@ export default async function MarketsPage({
 
           <div className="grid gap-3 sm:grid-cols-2">
             {openMarkets.map((market) => {
-              const { yesPrice, volume, history } = marketStats(allTrades, market.id)
+              const { yesPrice, volume } = marketStats(allTrades, market.id)
+              const yesPct = Math.round(yesPrice * 100)
+              const noPct = 100 - yesPct
               return (
-                <Link key={market.id} href={`/market/${market.id}`}>
-                  <Card className="h-full gap-3 py-4 transition-colors hover:border-kola/50">
-                    <CardHeader className="px-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-sm font-medium leading-snug">{market.question}</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4">
-                      <div className="flex items-end justify-between gap-2">
-                        <div>
-                          <div className="font-mono text-2xl font-semibold text-kola">
-                            {Math.round(yesPrice * 100)}
-                            <span className="text-sm">%</span>
-                          </div>
-                          <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
-                            <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-                              {market.category ?? "General"}
-                            </Badge>
-                            <CurrencyAmount usd={volume} className="text-[11px]" /> vol.
-                          </div>
-                        </div>
-                        <Spark data={history.length >= 2 ? history.slice(-40) : [yesPrice, yesPrice]} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <Card key={market.id} className="gap-0 overflow-hidden py-0 transition-colors hover:border-kola/50">
+                  <Link href={`/market/${market.id}`} className="block px-4 pt-4">
+                    <div className="flex items-start gap-3">
+                      <MarketThumb category={market.category} />
+                      <div className="min-w-0 text-sm font-medium leading-snug">{market.question}</div>
+                    </div>
+                  </Link>
+
+                  <div className="flex gap-2 px-4 pt-3">
+                    <Link
+                      href={`/market/${market.id}?buy=YES`}
+                      className="flex-1 rounded-md bg-yes/10 px-3 py-1.5 text-center font-mono text-sm font-medium text-yes hover:bg-yes/20"
+                    >
+                      Yes {yesPct}¢
+                    </Link>
+                    <Link
+                      href={`/market/${market.id}?buy=NO`}
+                      className="flex-1 rounded-md bg-no/10 px-3 py-1.5 text-center font-mono text-sm font-medium text-no hover:bg-no/20"
+                    >
+                      No {noPct}¢
+                    </Link>
+                  </div>
+
+                  <Link
+                    href={`/market/${market.id}`}
+                    className="flex items-center gap-2 px-4 py-3 text-[11px] text-muted-foreground"
+                  >
+                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                      {market.category ?? "General"}
+                    </Badge>
+                    <CurrencyAmount usd={volume} className="text-[11px]" />
+                    <span>vol.</span>
+                  </Link>
+                </Card>
               )
             })}
           </div>
 
           {closedMarkets.length > 0 && (
             <>
-              <h2 className="mb-3 mt-10 text-lg font-semibold tracking-tight">Resolved</h2>
+              <h2 className="mb-3 mt-10 font-display text-lg font-semibold tracking-tight">Resolved</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {closedMarkets.map((market) => (
                   <Link key={market.id} href={`/market/${market.id}`}>
                     <Card className="h-full gap-3 py-4 opacity-70 transition-colors hover:opacity-100">
-                      <CardHeader className="px-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <CardTitle className="text-sm font-medium leading-snug">{market.question}</CardTitle>
-                          {market.resolved_outcome && (
-                            <Badge
-                              variant="outline"
-                              className={
-                                market.resolved_outcome === "YES"
-                                  ? "shrink-0 border-yes text-yes"
-                                  : "shrink-0 border-no text-no"
-                              }
-                            >
-                              {market.resolved_outcome}
-                            </Badge>
-                          )}
+                      <div className="flex items-start gap-3 px-4">
+                        <MarketThumb category={market.category} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="text-sm font-medium leading-snug">{market.question}</div>
+                            {market.resolved_outcome && (
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "shrink-0",
+                                  market.resolved_outcome === "YES" ? "border-yes text-yes" : "border-no text-no"
+                                )}
+                              >
+                                {market.resolved_outcome}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      </CardHeader>
+                      </div>
                     </Card>
                   </Link>
                 ))}
