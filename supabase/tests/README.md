@@ -13,6 +13,7 @@ which fails the psql run / CI step.
 | `matching_best_execution.sql` | P0-1 cross-path best execution (BUY and SELL sides), cross-path time tie-break, P0-4 self-trade skip — all fail on the v2 engine |
 | `validation.sql` | P0-2 tick/min rejections (incl. 0.01/0.99 boundary acceptance), P0-3 close_at rejection + `close_due_markets()` flush/refund |
 | `fuzz.sql` | seeded 400-op random stream (places/cancels/splits/IOC) with `assert_invariants()` every 100 ops |
+| `order_types.sql` | M2: P0-7 idempotent submission (same `client_order_id` → same order, single escrow), FOK all-or-cancel (reject leaves balance untouched), GTD validation/matching-exclusion/cron reclamation, P0-8 fee hooks at zero (fee_amount = 0, treasury flat), auto-redemption at resolution |
 | `concurrency.sql` | parallel sessions via dblink (skips with a notice when dblink is unavailable); supplemented by continuous HFT-bot load + the 10-minute `record_invariants()` cron |
 
 ## Running
@@ -21,7 +22,7 @@ Against a disposable local stack (CI):
 
 ```sh
 supabase db reset
-for f in helpers invariants matching_best_execution validation fuzz; do
+for f in helpers invariants matching_best_execution validation order_types fuzz; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
     -c 'begin;' -f supabase/tests/helpers.sql -f "supabase/tests/$f.sql" -c 'rollback;'
 done

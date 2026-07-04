@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server"
 
 export type ActionState = { error?: string; success?: boolean } | null
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function placeOrder(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const marketId = String(formData.get("marketId") ?? "")
   const outcome = String(formData.get("outcome") ?? "")
@@ -12,9 +14,21 @@ export async function placeOrder(_prev: ActionState, formData: FormData): Promis
   const price = Number(formData.get("price"))
   const size = Number(formData.get("size"))
   const ioc = formData.get("ioc") === "true"
+  const fok = formData.get("fok") === "true"
+  const expiresAtRaw = String(formData.get("expiresAt") ?? "")
+  const clientOrderId = String(formData.get("clientOrderId") ?? "")
 
   if (!marketId || !outcome || !side || !Number.isFinite(price) || !Number.isFinite(size)) {
     return { error: "Invalid order." }
+  }
+
+  let expiresAt: string | undefined
+  if (expiresAtRaw) {
+    const parsed = new Date(expiresAtRaw)
+    if (Number.isNaN(parsed.getTime())) {
+      return { error: "Invalid expiry." }
+    }
+    expiresAt = parsed.toISOString()
   }
 
   const supabase = await createClient()
@@ -25,6 +39,11 @@ export async function placeOrder(_prev: ActionState, formData: FormData): Promis
     p_price: price,
     p_size: size,
     p_ioc: ioc,
+    p_fok: fok,
+    ...(expiresAt ? { p_expires_at: expiresAt } : {}),
+    // idempotency key (P0-7): retries and double-clicks reuse the same id,
+    // so the engine returns the original order instead of double-placing
+    ...(UUID_RE.test(clientOrderId) ? { p_client_order_id: clientOrderId } : {}),
   })
 
   if (error) {

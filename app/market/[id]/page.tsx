@@ -196,6 +196,7 @@ export default async function MarketPage({
         loggedIn={!!user}
         initialOutcome={initialOutcome}
         minOrderSize={market.min_order_size}
+        feeBps={market.fee_bps}
         sidebarExtras={sidebarExtras}
       />
     </div>

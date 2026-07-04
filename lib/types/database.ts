@@ -106,6 +106,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          fee_bps: number
           id: string
           min_order_size: number
           question: string
@@ -119,6 +120,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fee_bps?: number
           id?: string
           min_order_size?: number
           question: string
@@ -132,6 +134,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fee_bps?: number
           id?: string
           min_order_size?: number
           question?: string
@@ -151,7 +154,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          client_order_id: string | null
           created_at: string
+          expires_at: string | null
           filled_size: number
           id: string
           market_id: string
@@ -163,7 +168,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_order_id?: string | null
           created_at?: string
+          expires_at?: string | null
           filled_size?: number
           id?: string
           market_id: string
@@ -175,7 +182,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_order_id?: string | null
           created_at?: string
+          expires_at?: string | null
           filled_size?: number
           id?: string
           market_id?: string
@@ -269,6 +278,7 @@ export type Database = {
       trades: {
         Row: {
           created_at: string
+          fee_amount: number
           id: string
           is_seed: boolean
           kind: string | null
@@ -281,6 +291,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fee_amount?: number
           id?: string
           is_seed?: boolean
           kind?: string | null
@@ -293,6 +304,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fee_amount?: number
           id?: string
           is_seed?: boolean
           kind?: string | null
@@ -370,6 +382,9 @@ export type Database = {
       }
       place_order: {
         Args: {
+          p_client_order_id?: string
+          p_expires_at?: string
+          p_fok?: boolean
           p_ioc?: boolean
           p_market_id: string
           p_outcome: string

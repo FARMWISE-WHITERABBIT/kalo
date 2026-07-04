@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useActionState, useState } from "react"
+import { useActionState, useEffect, useRef, useState } from "react"
 import { ArrowDown, ArrowUp, ChevronDown, Clock, Trophy } from "lucide-react"
 import { placeOrder, type ActionState } from "@/app/actions/trading"
 import { BigChart, type PricePoint } from "@/components/big-chart"
@@ -43,7 +43,19 @@ type WorkspaceProps = {
   loggedIn: boolean
   initialOutcome?: Outcome
   minOrderSize?: number
+  feeBps?: number
   sidebarExtras?: React.ReactNode
+}
+
+// GTC = resting limit, MARKET = fill-and-kill at best price (FAK),
+// FOK = all-or-cancel limit, GTD = resting limit with an expiry.
+type OrderMode = "MARKET" | "GTC" | "FOK" | "GTD"
+
+const MODE_LABELS: Record<OrderMode, string> = {
+  MARKET: "Market",
+  GTC: "Limit",
+  FOK: "Limit · FOK",
+  GTD: "Limit · GTD",
 }
 
 function timeAgo(iso: string, now: number) {
@@ -73,15 +85,25 @@ export function MarketWorkspace({
   loggedIn,
   initialOutcome = "YES",
   minOrderSize = 1,
+  feeBps = 0,
   sidebarExtras,
 }: WorkspaceProps) {
   const [outcome, setOutcome] = useState<Outcome>(initialOutcome)
   const [side, setSide] = useState<OrderSide>("BUY")
-  const [mode, setMode] = useState<"LIMIT" | "MARKET">("MARKET")
+  const [mode, setMode] = useState<OrderMode>("MARKET")
   const [price, setPrice] = useState("50")
   const [size, setSize] = useState("10")
+  const [expiry, setExpiry] = useState("")
   const [marketError, setMarketError] = useState<string | null>(null)
   const [state, formAction, pending] = useActionState<ActionState, FormData>(placeOrder, null)
+
+  // P0-7 idempotency key: one uuid per order intent. Reused across retries
+  // and double-clicks (the engine dedupes them), regenerated once the
+  // previous submission has completed.
+  const intentRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (state?.success || state?.error) intentRef.current = null
+  }, [state])
 
   // During SSR the last trade's timestamp stands in for the wall clock, which
   // renders deterministically; the real clock takes over after hydration.
@@ -102,7 +124,7 @@ export function MarketWorkspace({
   function onPick(o: Outcome, s: OrderSide, p: number) {
     setOutcome(o)
     setSide(s)
-    setMode("LIMIT")
+    setMode("GTC")
     setPrice(String(Math.round(p * 100)))
   }
 
@@ -125,6 +147,9 @@ export function MarketWorkspace({
 
   function handleSubmit(formData: FormData) {
     setMarketError(null)
+    intentRef.current ??= crypto.randomUUID()
+    formData.set("clientOrderId", intentRef.current)
+
     if (mode === "MARKET") {
       const p = marketablePrice()
       if (p === null) {
@@ -133,9 +158,18 @@ export function MarketWorkspace({
       }
       formData.set("price", String(p))
       formData.set("ioc", "true")
+      formData.set("fok", "false")
     } else {
       formData.set("price", String(priceNum))
       formData.set("ioc", "false")
+      formData.set("fok", mode === "FOK" ? "true" : "false")
+      if (mode === "GTD") {
+        if (!expiry) {
+          setMarketError("Pick an expiry for a GTD order.")
+          return
+        }
+        formData.set("expiresAt", expiry)
+      }
     }
     formAction(formData)
   }
@@ -394,12 +428,15 @@ export function MarketWorkspace({
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-1 pb-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                    {mode === "MARKET" ? "Market" : "Limit"}
+                    {MODE_LABELS[mode]}
                     <ChevronDown className="size-3.5" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setMode("MARKET")}>Market</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setMode("LIMIT")}>Limit</DropdownMenuItem>
+                    {(Object.keys(MODE_LABELS) as OrderMode[]).map((m) => (
+                      <DropdownMenuItem key={m} onClick={() => setMode(m)}>
+                        {MODE_LABELS[m]}
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -434,7 +471,7 @@ export function MarketWorkspace({
                 <input type="hidden" name="outcome" value={outcome} />
                 <input type="hidden" name="side" value={side} />
 
-                {mode === "LIMIT" && (
+                {mode !== "MARKET" && (
                   <div className="mb-3 flex items-center justify-between">
                     <label htmlFor="price-input" className="text-[15px] font-semibold">
                       Limit Price
@@ -451,6 +488,21 @@ export function MarketWorkspace({
                       />
                       <span className="text-sm text-muted-foreground">&cent;</span>
                     </div>
+                  </div>
+                )}
+
+                {mode === "GTD" && (
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <label htmlFor="expiry-input" className="text-[15px] font-semibold">
+                      Expires
+                    </label>
+                    <input
+                      id="expiry-input"
+                      type="datetime-local"
+                      value={expiry}
+                      onChange={(e) => setExpiry(e.target.value)}
+                      className="h-9 rounded-lg border border-input bg-transparent px-2 text-right text-sm focus:border-primary focus:outline-none"
+                    />
                   </div>
                 )}
 
@@ -500,6 +552,8 @@ export function MarketWorkspace({
                 <div className="mt-3 min-h-4 text-xs text-muted-foreground">
                   {mode === "MARKET" ? (
                     <>Fills at the best available price; the remainder is cancelled.</>
+                  ) : mode === "FOK" ? (
+                    <>Fills completely at your limit or better, or cancels entirely.</>
                   ) : side === "BUY" ? (
                     <>
                       Escrow <CurrencyAmount usd={priceNum * sizeNum} className="text-foreground" />{" "}
@@ -509,6 +563,9 @@ export function MarketWorkspace({
                   ) : (
                     <>You hold {formatShares(ownedShares)} {outcome === "YES" ? "Yes" : "No"} shares.</>
                   )}
+                  <span className="ml-1">
+                    &middot; Fee: {feeBps === 0 ? "none" : `${feeBps} bps`}
+                  </span>
                 </div>
 
                 {marketError && <p className="mt-2 text-sm text-destructive">{marketError}</p>}
