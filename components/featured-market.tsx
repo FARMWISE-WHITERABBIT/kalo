@@ -15,16 +15,28 @@ function Sparkline({ data }: { data: number[] }) {
     )
   }
   const pct = data.map((v) => v * 100)
+  // fit the y-domain to the data so movement is visible (min 10pt span)
+  let lo = Math.max(0, Math.min(...pct) - 4)
+  let hi = Math.min(100, Math.max(...pct) + 4)
+  if (hi - lo < 10) {
+    const mid = (hi + lo) / 2
+    lo = Math.max(0, mid - 5)
+    hi = Math.min(100, mid + 5)
+  }
   const X = (i: number) => (i / (pct.length - 1)) * (w - 60)
-  const Y = (v: number) => h - 24 - (v / 100) * (h - 40)
-  const pts = pct.map((v, i) => `${X(i)},${Y(v)}`).join(" ")
+  const Y = (v: number) => h - 24 - ((v - lo) / (hi - lo)) * (h - 40)
+  // step-after: a traded price holds until the next print
+  let path = `M ${X(0)} ${Y(pct[0])}`
+  for (let i = 1; i < pct.length; i++) {
+    path += ` H ${X(i)} V ${Y(pct[i])}`
+  }
   const last = pct[pct.length - 1]
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="block w-full" style={{ height: "auto" }}>
-      {[0, 30, 60].map((g) => (
+      {[lo + (hi - lo) * 0.15, (lo + hi) / 2, hi - (hi - lo) * 0.15].map((g, i) => (
         <line
-          key={g}
+          key={i}
           x1="0"
           x2={w - 60}
           y1={Y(g)}
@@ -33,8 +45,14 @@ function Sparkline({ data }: { data: number[] }) {
           strokeDasharray="2 6"
         />
       ))}
-      <polyline points={pts} fill="none" stroke="var(--chart-2)" strokeWidth="2" />
-      <circle cx={X(pct.length - 1)} cy={Y(last)} r="4" fill="var(--chart-2)" />
+      <path d={path} fill="none" stroke="var(--chart-2)" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx={X(pct.length - 1)} cy={Y(last)} r="4" fill="var(--chart-2)">
+        <animate attributeName="opacity" values="1;0.6;1" dur="1.8s" repeatCount="indefinite" />
+      </circle>
+      <circle cx={X(pct.length - 1)} cy={Y(last)} fill="none" stroke="var(--chart-2)" strokeWidth="2">
+        <animate attributeName="r" values="4;11" dur="1.8s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.5;0" dur="1.8s" repeatCount="indefinite" />
+      </circle>
       <text
         x={X(pct.length - 1) + 10}
         y={Y(last) - 8}
