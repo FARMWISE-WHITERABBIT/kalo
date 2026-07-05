@@ -6,6 +6,7 @@ import { CreateMarketForm } from "./create-market-form"
 import { ResolveMarketButtons } from "./resolve-market-buttons"
 import { CommandCentre, type BotStatus } from "./command-centre"
 import { CurationQueuePanel, type CurationQueue } from "./curation-queue"
+import { WorldCupPanel } from "./world-cup-panel"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -23,11 +24,13 @@ export default async function AdminPage() {
     redirect("/")
   }
 
-  const [{ data: markets }, { data: botStatus }, { data: curationQueue }] = await Promise.all([
-    supabase.from("markets").select("*").order("created_at", { ascending: false }),
-    supabase.rpc("bot_status"),
-    supabase.rpc("curation_queue"),
-  ])
+  const [{ data: markets }, { data: botStatus }, { data: curationQueue }, { data: games }] =
+    await Promise.all([
+      supabase.from("markets").select("*").order("created_at", { ascending: false }),
+      supabase.rpc("bot_status"),
+      supabase.rpc("curation_queue"),
+      supabase.from("games").select("*").order("kickoff_at", { ascending: true }),
+    ])
   const openMarkets = (markets ?? []).filter((m) => m.status === "open")
   const resolvedMarkets = (markets ?? []).filter((m) => m.status === "resolved")
 
@@ -46,6 +49,10 @@ export default async function AdminPage() {
           <CurationQueuePanel queue={curationQueue as unknown as CurationQueue} />
         </div>
       )}
+
+      <div className="mb-8">
+        <WorldCupPanel games={games ?? []} />
+      </div>
 
       <div className="mb-8">
         <CreateMarketForm />

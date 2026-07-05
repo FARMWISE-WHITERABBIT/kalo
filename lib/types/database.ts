@@ -131,6 +131,51 @@ export type Database = {
           },
         ]
       }
+      games: {
+        Row: {
+          away_code: string
+          away_score: number | null
+          away_team: string
+          competition: string
+          created_at: string
+          home_code: string
+          home_score: number | null
+          home_team: string
+          id: string
+          kickoff_at: string
+          stage: string
+          status: string
+        }
+        Insert: {
+          away_code: string
+          away_score?: number | null
+          away_team: string
+          competition?: string
+          created_at?: string
+          home_code: string
+          home_score?: number | null
+          home_team: string
+          id?: string
+          kickoff_at: string
+          stage?: string
+          status?: string
+        }
+        Update: {
+          away_code?: string
+          away_score?: number | null
+          away_team?: string
+          competition?: string
+          created_at?: string
+          home_code?: string
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          kickoff_at?: string
+          stage?: string
+          status?: string
+        }
+        Relationships: []
+      }
       markets: {
         Row: {
           category: string | null
@@ -139,7 +184,10 @@ export type Database = {
           created_by: string | null
           description: string | null
           fee_bps: number
+          game_id: string | null
           id: string
+          line: number | null
+          market_kind: string | null
           min_order_size: number
           question: string
           resolved_outcome: string | null
@@ -153,7 +201,10 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           fee_bps?: number
+          game_id?: string | null
           id?: string
+          line?: number | null
+          market_kind?: string | null
           min_order_size?: number
           question: string
           resolved_outcome?: string | null
@@ -167,7 +218,10 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           fee_bps?: number
+          game_id?: string | null
           id?: string
+          line?: number | null
+          market_kind?: string | null
           min_order_size?: number
           question?: string
           resolved_outcome?: string | null
@@ -180,6 +234,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "markets_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
             referencedColumns: ["id"]
           },
         ]
@@ -418,6 +479,19 @@ export type Database = {
         }[]
       }
       system_status: { Args: never; Returns: Json }
+      create_game: {
+        Args: {
+          p_away_code: string
+          p_away_team: string
+          p_draw_prior: number
+          p_home_code: string
+          p_home_prior: number
+          p_home_team: string
+          p_kickoff: string
+          p_stage: string
+        }
+        Returns: string
+      }
       create_market: {
         Args: {
           p_category: string
@@ -426,6 +500,10 @@ export type Database = {
           p_question: string
         }
         Returns: string
+      }
+      resolve_game: {
+        Args: { p_away_goals: number; p_game_id: string; p_home_goals: number }
+        Returns: undefined
       }
       get_order_book: {
         Args: { p_market_id: string }

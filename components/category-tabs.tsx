@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { TrendingUp, ChevronRight } from "lucide-react"
+import { TrendingUp, Trophy, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // The Polymarket-style topic tab bar that sits under the main nav.
@@ -10,6 +10,7 @@ export function CategoryTabs({ categories }: { categories: string[] }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const active = pathname === "/" ? searchParams.get("category") : undefined
+  const onWorldCup = pathname.startsWith("/world-cup")
 
   return (
     <div className="border-t border-border/60">
@@ -19,7 +20,7 @@ export function CategoryTabs({ categories }: { categories: string[] }) {
             href="/"
             className={cn(
               "flex shrink-0 items-center gap-1.5 border-b-2 py-2.5 transition-colors",
-              active === null
+              active === null && !onWorldCup
                 ? "border-foreground text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
@@ -28,9 +29,25 @@ export function CategoryTabs({ categories }: { categories: string[] }) {
             Trending
           </Link>
 
+          {/* the World Cup hub gets a pinned tab; the plain category filter
+              stays reachable for its markets grid */}
+          <Link
+            href="/world-cup"
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 border-b-2 py-2.5 transition-colors",
+              onWorldCup
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Trophy className="size-4" />
+            World Cup
+          </Link>
+
           <span aria-hidden="true" className="h-4 w-px shrink-0 bg-border" />
 
-          {categories.map((c) => (
+          {/* the pinned hub tab covers World Cup; skip the duplicate pill */}
+          {categories.filter((c) => c !== "World Cup").map((c) => (
             <Link
               key={c}
               href={`/?category=${encodeURIComponent(c)}`}
