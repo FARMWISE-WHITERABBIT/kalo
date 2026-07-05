@@ -142,7 +142,13 @@ Deno.serve(async (_req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+  // env var wins if configured; otherwise the key lives in Supabase Vault
+  // behind the service-role-only operator_secret() accessor (migration 0016)
+  let apiKey = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+  if (!apiKey) {
+    const { data } = await supabase.rpc("operator_secret", { p_name: "anthropic_api_key" });
+    apiKey = data ?? "";
+  }
 
   // ── 1. ingest ──────────────────────────────────────────────────────────
   let ingested = 0;
