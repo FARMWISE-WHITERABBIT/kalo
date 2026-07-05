@@ -153,3 +153,19 @@
     display: none;
   }
 }
+@keyframes kalo-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@layer utilities {
+  .animate-kalo-pop {
+    animation: kalo-pop-in 0.25s ease-out;
+  }
+}

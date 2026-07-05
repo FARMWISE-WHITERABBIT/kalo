@@ -2,91 +2,71 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ChevronRight, Clock, Trophy } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
-import { LiveRefresher } from "@/components/live-refresher"
 import { CurrencyAmount } from "@/components/currency-amount"
 import { Countdown } from "@/components/world-cup/countdown"
-import { GameChart, type GameSeries } from "@/components/world-cup/game-chart"
-import { tradeYesPrice } from "@/lib/orderbook"
+import { type GameSeries } from "@/components/world-cup/game-chart"
+import { GameWorkspace, type BoardSection, type GameTapeEntry } from "./game-workspace"
+import { toYesLadder, tradeYesPrice, type Ladder } from "@/lib/orderbook"
 import {
   buildGameBoards,
   flagFor,
   kindLabel,
   priceCents,
-  type BoardMarket,
   type Game,
   type MarketKind,
 } from "@/lib/world-cup"
-import { cn } from "@/lib/utils"
-import type { Market, Trade } from "@/lib/types"
+import type { Market, OrderBookLevel, Trade } from "@/lib/types"
 
 const SERIES_COLORS = ["var(--chart-1)", "var(--chart-4)", "var(--chart-3)"]
-
-function PropRow({ market, label }: { market: BoardMarket | undefined; label: string }) {
-  if (!market) return null
-  const yes = market.yesPrice
-  const resolved = market.status === "resolved"
-  return (
-    <div className="flex items-center gap-3 py-2.5">
-      <Link
-        href={`/market/${market.id}`}
-        className="min-w-0 flex-1 text-[15px] font-medium hover:text-primary"
-      >
-        <span className="line-clamp-1">{label}</span>
-      </Link>
-      <span className="w-12 shrink-0 text-right text-lg font-bold tabular-nums">
-        {yes !== null ? `${Math.round(yes * 100)}%` : "—"}
-      </span>
-      {resolved ? (
-        <span
-          className={cn(
-            "flex h-9 w-[104px] shrink-0 items-center justify-center rounded-lg text-sm font-semibold",
-            market.resolvedOutcome === "YES" ? "bg-yes/15 text-yes" : "bg-secondary/40 text-muted-foreground"
-          )}
-        >
-          {market.resolvedOutcome === "YES" ? "Yes ✓" : "No ✓"}
-        </span>
-      ) : (
-        <div className="flex shrink-0 gap-1.5">
-          <Link
-            href={`/market/${market.id}?buy=YES`}
-            className="flex h-9 w-[72px] items-center justify-center gap-1 rounded-lg bg-yes/15 text-sm font-semibold text-yes transition-colors hover:bg-yes hover:text-white"
-          >
-            Yes {priceCents(yes)}
-          </Link>
-          <Link
-            href={`/market/${market.id}?buy=NO`}
-            className="flex h-9 w-[72px] items-center justify-center gap-1 rounded-lg bg-no/15 text-sm font-semibold text-no transition-colors hover:bg-no hover:text-white"
-          >
-            No {yes !== null ? `${100 - Math.round(yes * 100)}¢` : "—"}
-          </Link>
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default async function GamePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: game }, { data: markets }] = await Promise.all([
+  const [{ data: game }, { data: markets }, { data: { user } }] = await Promise.all([
     supabase.from("games").select("*").eq("id", id).single(),
     supabase.from("markets").select("*").eq("game_id", id),
+    supabase.auth.getUser(),
   ])
 
   if (!game) notFound()
   const g: Game = game
   const gameMarkets: Market[] = markets ?? []
+  const marketIds = gameMarkets.map((m) => m.id)
 
-  let trades: Trade[] = []
-  if (gameMarkets.length > 0) {
-    const { data } = await supabase
-      .from("trades")
-      .select("*")
-      .in("market_id", gameMarkets.map((m) => m.id))
-      .order("created_at", { ascending: false })
-      .limit(1500)
-    trades = data ?? []
+  // trades (chart + tape), order books (trade ticket), user positions
+  const [tradesRes, bookResults, positionsRes] = await Promise.all([
+    marketIds.length
+      ? supabase
+          .from("trades")
+          .select("*")
+          .in("market_id", marketIds)
+          .order("created_at", { ascending: false })
+          .limit(1500)
+      : Promise.resolve({ data: [] as Trade[] }),
+    Promise.all(
+      gameMarkets.map((m) =>
+        supabase.rpc("get_order_book", { p_market_id: m.id }).then(({ data }) => ({
+          marketId: m.id,
+          book: (data ?? []) as OrderBookLevel[],
+        }))
+      )
+    ),
+    user && marketIds.length
+      ? supabase.from("positions").select("*").eq("user_id", user.id).in("market_id", marketIds)
+      : Promise.resolve({ data: [] }),
+  ])
+  const trades: Trade[] = tradesRes.data ?? []
+
+  const ladders: Record<string, Ladder> = {}
+  for (const r of bookResults) ladders[r.marketId] = toYesLadder(r.book)
+
+  const positions: Record<string, { yes: number; no: number }> = {}
+  for (const p of positionsRes.data ?? []) {
+    const cur = positions[p.market_id] ?? { yes: 0, no: 0 }
+    if (p.outcome === "YES") cur.yes = p.shares
+    else cur.no = p.shares
+    positions[p.market_id] = cur
   }
 
   const board = buildGameBoards([g], gameMarkets, trades)[0]
@@ -109,6 +89,49 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
   })
 
   const volume = trades.filter((t) => !t.is_seed).reduce((sum, t) => sum + t.price * t.size, 0)
+
+  const bothFlags = `${flagFor(g.home_code)}${flagFor(g.away_code)}`
+  const rowFor = (kind: MarketKind, flag: string) => {
+    const m = kinds[kind]
+    if (!m) return []
+    return [
+      {
+        kind: kind as string,
+        marketId: m.id,
+        label: kindLabel(kind, g, m.line),
+        flag,
+        question: m.question,
+        yesPrice: m.yesPrice,
+        status: m.status,
+        resolvedOutcome: m.resolvedOutcome,
+      },
+    ]
+  }
+  const sections: BoardSection[] = [
+    {
+      title: "Moneyline",
+      rows: [
+        ...rowFor("moneyline_home", flagFor(g.home_code)),
+        ...rowFor("draw", bothFlags),
+        ...rowFor("moneyline_away", flagFor(g.away_code)),
+      ],
+    },
+    { title: "Spread", rows: rowFor("spread_home", flagFor(g.home_code)) },
+    { title: "Total goals", rows: rowFor("total_over", bothFlags) },
+    { title: "Props", rows: rowFor("btts", bothFlags) },
+  ]
+
+  const labelByMarket = new Map(sections.flatMap((s) => s.rows.map((r) => [r.marketId, r.label])))
+  const tape: GameTapeEntry[] = trades.slice(0, 25).map((t) => ({
+    id: t.id,
+    label: labelByMarket.get(t.market_id) ?? "",
+    outcome: t.outcome,
+    priceCents: Math.round(t.price * 100),
+    amount: t.price * t.size,
+    createdAt: t.created_at,
+  }))
+  // everything rendered server-side is "seen" — toasts only fire for new prints
+  const seenTradeIds = trades.slice(0, 80).map((t) => t.id)
 
   // right rail: the rest of the slate
   const { data: otherGames } = await supabase
@@ -138,36 +161,69 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
     railBoards = buildGameBoards(rail, railMarkets ?? [], railTrades ?? [])
   }
 
-  const rules = gameMarkets.find((m) => m.market_kind === "moneyline_home")?.description ?? null
-  const stillTrading = g.status !== "finished"
+  const sidebarExtras = (
+    <>
+      <div className="rounded-xl border border-border/60 bg-card p-4">
+        <div className="text-[15px] font-semibold">More FIFA World Cup games</div>
+        <div className="mt-1 divide-y divide-border/40">
+          {railBoards.map(({ game: rg, kinds: rk }) => (
+            <Link key={rg.id} href={`/world-cup/${rg.id}`} className="group block py-2.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  {new Date(rg.kickoff_at).toLocaleString(undefined, {
+                    weekday: "short",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </span>
+                <span>{rg.stage}</span>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-base" aria-hidden="true">
+                  {flagFor(rg.home_code)}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-primary">
+                  {rg.home_team} vs {rg.away_team}
+                </span>
+                <span className="text-base" aria-hidden="true">
+                  {flagFor(rg.away_code)}
+                </span>
+              </div>
+              <div className="mt-1 flex gap-3 text-xs tabular-nums text-muted-foreground">
+                <span>
+                  {rg.home_code} {priceCents(rk.moneyline_home?.yesPrice ?? null)}
+                </span>
+                <span>
+                  {rg.away_code} {priceCents(rk.moneyline_away?.yesPrice ?? null)}
+                </span>
+              </div>
+            </Link>
+          ))}
+          {railBoards.length === 0 && (
+            <p className="py-2.5 text-sm text-muted-foreground">No other games scheduled.</p>
+          )}
+        </div>
+        <Link
+          href="/world-cup"
+          className="mt-2 flex h-10 items-center justify-center rounded-lg border border-border/80 text-sm font-semibold transition-colors hover:bg-secondary/50"
+        >
+          View all games
+        </Link>
+      </div>
 
-  const sections: { title: string; rows: { kind: MarketKind; label: string }[] }[] = [
-    {
-      title: "Moneyline",
-      rows: [
-        { kind: "moneyline_home", label: kindLabel("moneyline_home", g) },
-        { kind: "draw", label: kindLabel("draw", g) },
-        { kind: "moneyline_away", label: kindLabel("moneyline_away", g) },
-      ],
-    },
-    {
-      title: "Spread",
-      rows: [{ kind: "spread_home", label: kindLabel("spread_home", g, kinds.spread_home?.line) }],
-    },
-    {
-      title: "Total goals",
-      rows: [{ kind: "total_over", label: kindLabel("total_over", g, kinds.total_over?.line) }],
-    },
-    {
-      title: "Props",
-      rows: [{ kind: "btts", label: kindLabel("btts", g) }],
-    },
-  ]
+      <div className="rounded-xl border border-border/60 bg-gradient-to-br from-secondary/70 to-card p-4">
+        <div className="text-sm font-bold">Play money, real markets</div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Every option on this page is a fully-collateralized Yes/No market on Kalo&rsquo;s
+          exchange. All game markets settle on regulation time (90 minutes plus stoppage) per
+          the official FIFA match report — extra time and penalties don&rsquo;t count.
+        </p>
+      </div>
+    </>
+  )
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-6">
-      {g.status !== "finished" && <LiveRefresher intervalMs={15000} />}
-
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/world-cup" className="hover:text-foreground">
           World Cup
@@ -213,102 +269,19 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-        {/* ------------------------------------------------ left column */}
-        <div className="min-w-0">
-          <GameChart series={series} />
-
-          {sections.map((sec) => {
-            const rows = sec.rows.filter((r) => kinds[r.kind])
-            if (rows.length === 0) return null
-            return (
-              <section key={sec.title} className="mt-8 border-t border-border/60 pt-5">
-                <h2 className="text-lg font-bold">{sec.title}</h2>
-                <div className="mt-1 divide-y divide-border/40">
-                  {rows.map((r) => (
-                    <PropRow key={r.kind} market={kinds[r.kind]} label={r.label} />
-                  ))}
-                </div>
-              </section>
-            )
-          })}
-
-          {rules && (
-            <section className="mt-8 border-t border-border/60 pt-5">
-              <h2 className="text-lg font-bold">Rules</h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-foreground/80">
-                All markets on this game settle on regulation time (90 minutes plus stoppage)
-                per the official FIFA match report on FIFA.com — extra time and penalty
-                shootouts do not count. Each option above is an independent Yes/No market;
-                open one for its full resolution criteria, order book and activity.
-              </p>
-              {stillTrading && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Trading stays open through the match and closes two hours after kickoff.
-                </p>
-              )}
-            </section>
-          )}
-        </div>
-
-        {/* ------------------------------------------------ right rail */}
-        <aside className="space-y-4 lg:sticky lg:top-32">
-          <div className="rounded-xl border border-border/60 bg-card p-4">
-            <div className="text-[15px] font-semibold">More FIFA World Cup games</div>
-            <div className="mt-1 divide-y divide-border/40">
-              {railBoards.map(({ game: rg, kinds: rk }) => (
-                <Link key={rg.id} href={`/world-cup/${rg.id}`} className="group block py-2.5">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {new Date(rg.kickoff_at).toLocaleString(undefined, {
-                        weekday: "short",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    <span>{rg.stage}</span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="text-base" aria-hidden="true">
-                      {flagFor(rg.home_code)}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-primary">
-                      {rg.home_team} vs {rg.away_team}
-                    </span>
-                    <span className="text-base" aria-hidden="true">
-                      {flagFor(rg.away_code)}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex gap-3 text-xs tabular-nums text-muted-foreground">
-                    <span>
-                      {rg.home_code} {priceCents(rk.moneyline_home?.yesPrice ?? null)}
-                    </span>
-                    <span>
-                      {rg.away_code} {priceCents(rk.moneyline_away?.yesPrice ?? null)}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-              {railBoards.length === 0 && (
-                <p className="py-2.5 text-sm text-muted-foreground">No other games scheduled.</p>
-              )}
-            </div>
-            <Link
-              href="/world-cup"
-              className="mt-2 flex h-10 items-center justify-center rounded-lg border border-border/80 text-sm font-semibold transition-colors hover:bg-secondary/50"
-            >
-              View all games
-            </Link>
-          </div>
-
-          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-secondary/70 to-card p-4">
-            <div className="text-sm font-bold">Play money, real markets</div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Every option on this page is a fully-collateralized Yes/No market on Kalo&rsquo;s
-              exchange. Pick an outcome to open its trade ticket.
-            </p>
-          </div>
-        </aside>
+      <div className="mt-6">
+        <GameWorkspace
+          gameTitle={`${g.home_team} vs ${g.away_team}`}
+          sections={sections}
+          series={series}
+          ladders={ladders}
+          positions={positions}
+          loggedIn={!!user}
+          minOrderSize={gameMarkets[0]?.min_order_size ?? 1}
+          tape={tape}
+          seenTradeIds={seenTradeIds}
+          sidebarExtras={sidebarExtras}
+        />
       </div>
     </div>
   )
